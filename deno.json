@@ -1,0 +1,13 @@
+{
+  "tasks": {
+    "init": "deno run -R=io -W=io -N=adventofcode.com -E=AOC_SESSION_KEY --env-file scripts/init.ts",
+    "check": "deno run -R=io -W=io --allow-run=\"deno\" scripts/check.ts"
+  },
+  "imports": {
+    "@b-fuze/deno-dom": "jsr:@b-fuze/deno-dom@^0.1.48",
+    "@std/fs": "jsr:@std/fs@^1.0.6",
+    "@std/io": "jsr:@std/io@^0.225.0",
+    "@std/streams": "jsr:@std/streams@^1.0.8",
+    "zod": "npm:zod@^3.23.8"
+  }
+}
