@@ -58,5 +58,5 @@ export function getProgramFile(
   part: z.infer<typeof partSchema>,
   runtime: z.infer<typeof runtimeSchema>
 ) {
-  return `${runtime}/${args.year}/${args.day}/part${part}.${extensionByRuntime[runtime]}`;
+  return `solutions/${runtime}/${args.year}/${args.day}/part${part}.${extensionByRuntime[runtime]}`;
 }
