@@ -5,10 +5,14 @@ import {
   getIODir,
   handleError,
   inputStringArgsSchema,
-  Runtime,
+  runtimeSchema,
+  partSchema,
   yearSchema,
-} from "./shared.ts";
+  getProgramFile,
+  Part,
+} from "./lib/shared.ts";
 import z from "npm:zod";
+import { solutionTemplates } from "./lib/solutionTemplates.ts";
 
 /**
  * Fetch data for the given day and year.
@@ -17,17 +21,21 @@ import z from "npm:zod";
 const inputArgsSchema = z.object({
   year: yearSchema,
   day: daySchema,
+  runtime: runtimeSchema.optional(),
+  part: partSchema.optional(),
 });
 
 const args = handleError(
   inputArgsSchema.safeParse({
     day: Deno.args[0],
     year: Deno.args[1],
+    runtime: Deno.args[2],
+    part: Deno.args[3],
   })
 );
 
 const argsStr = handleError(inputStringArgsSchema.safeParse(args));
-const inputDir = getIODir(argsStr);
+const inputDir = getIODir(argsStr.year, argsStr.day);
 
 const apiUrl = "https://adventofcode.com";
 const userAgentHeader = {
@@ -38,6 +46,7 @@ await createDayFolder();
 await fetchAndSaveActualInput();
 await createBoilerplate();
 await fetchDescription();
+await createSolutions();
 
 async function createDayFolder() {
   if (await exists(inputDir)) {
@@ -181,13 +190,36 @@ async function saveDescription(fileName: string, description: Element) {
   }
 }
 
-// TODO: use it
-const _solutionTemplate: Record<Runtime, string> = {
-  "ts-deno": `import { input, output } from "../../utils.ts";
+async function createSolutions() {
+  if (!args.runtime) {
+    return;
+  }
 
-for await (const line of input) {
-  // parse input here
+  if (!args.part) {
+    await createSolution("1");
+    await createSolution("2");
+  } else {
+    await createSolution(args.part);
+  }
 }
 
-await output();`,
-};
+async function createSolution(part: Part) {
+  if (!args.runtime) {
+    return;
+  }
+
+  const solutionPath = getProgramFile(
+    argsStr.year,
+    argsStr.day,
+    part,
+    args.runtime
+  );
+  if (await exists(solutionPath)) {
+    logExistence(solutionPath);
+    return;
+  }
+
+  await ensureFile(solutionPath);
+  await Deno.writeTextFile(solutionPath, solutionTemplates[args.runtime]);
+  logCreation(solutionPath);
+}

@@ -3,7 +3,8 @@
 - `deno task init` downloads data for the current day and year
 - `deno task init <day (1-25)>` downloads data for the given day and current year
 - `deno task init <day (1-25)> <year (2015+)>` downloads data for the given day and year
-- TODO: `deno task init <day (1-25)> <year (2015+)> <runtime (ts-deno)> <part (1|2)>` initializes a new solution folder with the given runtime and part
+- `deno task init <day (1-25)> <year (2015+)> <runtime (ts-deno)>` initializes a new solution folder with the given runtime and both parts
+- `deno task init <day (1-25)> <year (2015+)> <runtime (ts-deno)> <part (1|2)>` initializes a new solution folder with the given runtime and part
 
 - `deno task check <day (1-25)> <year (2015+)> <runtime (ts-deno)> <part (1|2)> <input (actual|example)>` checks the current solution against the expected output
 

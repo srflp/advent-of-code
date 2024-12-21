@@ -9,7 +9,7 @@ import {
   inputStringArgsSchema,
   getIOFile,
   getProgramFile,
-} from "./shared.ts";
+} from "./lib/shared.ts";
 import { exists } from "jsr:@std/fs";
 
 /**
@@ -46,7 +46,10 @@ const argsStr = handleError(inputStringArgsSchema.safeParse(args));
 
 if (args.runtime === "ts-deno") {
   const tsDenoCommand = new Deno.Command("deno", {
-    args: ["run", getProgramFile(argsStr, args.part, args.runtime)],
+    args: [
+      "run",
+      getProgramFile(argsStr.year, argsStr.day, args.part, args.runtime),
+    ],
     stdin: "piped",
     stdout: "piped",
   });
@@ -56,7 +59,13 @@ if (args.runtime === "ts-deno") {
     Deno.exit(1);
   }
 
-  const outputFile = getIOFile("output", argsStr, args.part, args.input);
+  const outputFile = getIOFile(
+    "output",
+    argsStr.year,
+    argsStr.day,
+    args.part,
+    args.input
+  );
   // const outputExists = await Deno.ensu(outputFile);
   const outputExists = await exists(outputFile);
   if (!outputExists) {
@@ -84,7 +93,7 @@ if (args.runtime === "ts-deno") {
 async function runCommand(command: Deno.Command) {
   const process = command.spawn();
   const inputFile = await Deno.open(
-    getIOFile("input", argsStr, args.part, args.input)
+    getIOFile("input", argsStr.year, argsStr.day, args.part, args.input)
   );
   performance.mark("start");
   await inputFile.readable.pipeTo(process.stdin);

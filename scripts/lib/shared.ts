@@ -7,18 +7,31 @@ export const yearSchema = z.coerce
   .number()
   .min(2015, "First Advent of Code was in 2015")
   .default(currentYear);
+export type Year = z.infer<typeof yearSchema>;
+
 export const daySchema = z.coerce.number().min(1).max(25).default(currentDay);
+export type Day = z.infer<typeof daySchema>;
+
 export const runtimeSchema = z.enum(["ts-deno"]);
 export type Runtime = z.infer<typeof runtimeSchema>;
+
 export const partSchema = z.enum(["1", "2"]);
+export type Part = z.infer<typeof partSchema>;
+
 export const solutionTypeSchema = z.enum(["actual", "example"]);
+export type SolutionType = z.infer<typeof solutionTypeSchema>;
 
 export const yearStringSchema = z.coerce
   .string()
   .transform((year) => year.padStart(4, "0"));
+export type YearString = z.infer<typeof yearStringSchema>;
+
 export const dayStringSchema = z.coerce
   .string()
   .transform((day) => day.padStart(2, "0"));
+export type DayString = z.infer<typeof dayStringSchema>;
+
+type IO = "input" | "output";
 
 export function handleError<I, O>(argsOrError: z.SafeParseReturnType<I, O>): O {
   if (argsOrError.success) return argsOrError.data;
@@ -34,17 +47,18 @@ export const inputStringArgsSchema = z.object({
   day: dayStringSchema,
 });
 
-export function getIODir(args: z.infer<typeof inputStringArgsSchema>) {
-  return `io/${args.year}/${args.day}`;
+export function getIODir(year: YearString, day: DayString) {
+  return `io/${year}/${day}`;
 }
 
 export function getIOFile(
-  io: "input" | "output",
-  args: z.infer<typeof inputStringArgsSchema>,
-  part: z.infer<typeof partSchema>,
-  solutionType: z.infer<typeof solutionTypeSchema>
+  io: IO,
+  year: YearString,
+  day: DayString,
+  part: Part,
+  solutionType: SolutionType
 ) {
-  return `${getIODir(args)}/${solutionType}${
+  return `${getIODir(year, day)}/${solutionType}${
     io === "input" && solutionType === "actual" ? "" : `.part${part}`
   }.${io}`;
 }
@@ -54,9 +68,10 @@ const extensionByRuntime: Record<Runtime, string> = {
 };
 
 export function getProgramFile(
-  args: z.infer<typeof inputStringArgsSchema>,
-  part: z.infer<typeof partSchema>,
-  runtime: z.infer<typeof runtimeSchema>
+  year: YearString,
+  day: DayString,
+  part: Part,
+  runtime: Runtime
 ) {
-  return `solutions/${runtime}/${args.year}/${args.day}/part${part}.${extensionByRuntime[runtime]}`;
+  return `solutions/${runtime}/${year}/${day}/part${part}.${extensionByRuntime[runtime]}`;
 }
