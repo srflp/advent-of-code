@@ -1,4 +1,4 @@
-import { ensureDir, ensureFile, exists } from "jsr:@std/fs";
+import { ensureFile, exists } from "jsr:@std/fs";
 import { DOMParser, Element } from "jsr:@b-fuze/deno-dom";
 import {
   daySchema,
@@ -42,20 +42,10 @@ const userAgentHeader = {
   "User-Agent": "github.com/srflp/advent-of-code by sauer.filip@gmail.com",
 };
 
-await createDayFolder();
 await fetchAndSaveActualInput();
 await createBoilerplate();
 await fetchDescription();
 await createSolutions();
-
-async function createDayFolder() {
-  if (await exists(inputDir)) {
-    logExistence();
-  } else {
-    await ensureDir(inputDir);
-    logCreation();
-  }
-}
 
 async function createBoilerplate() {
   const files = [
@@ -63,8 +53,8 @@ async function createBoilerplate() {
     "example.part1.output",
     "example.part2.input",
     "example.part2.output",
-  ];
-  const created = await Promise.all(files.map(checkExistanceOrCreate));
+  ].map((fileName) => getInputFilePath(fileName));
+  const created = await Promise.all(files.map(checkExistenceOrCreate));
   created.map((created, index) => {
     if (created) {
       logCreation(files[index]);
@@ -77,8 +67,7 @@ async function createBoilerplate() {
 /**
  * Returns true if the file was created.
  */
-async function checkExistanceOrCreate(fileName: string) {
-  const path = `${inputDir}/${fileName}`;
+async function checkExistenceOrCreate(path: string) {
   if (await exists(path)) {
     return false;
   } else {
@@ -89,10 +78,10 @@ async function checkExistanceOrCreate(fileName: string) {
 
 async function fetchAndSaveActualInput() {
   const fileName = `actual.input`;
-  const inputPath = getFilePath(fileName);
+  const inputPath = getInputFilePath(fileName);
 
   if (await exists(inputPath)) {
-    logExistence(fileName);
+    logExistence(inputPath);
     return;
   }
 
@@ -129,28 +118,42 @@ function aocFetch(path: string) {
   });
 }
 
-function getFilePath(fileName: string) {
+function getInputFilePath(fileName: string) {
   return `${inputDir}/${fileName}`;
 }
 
-function logExistence(fileName: string = "") {
-  console.log(`E ${getFilePath(fileName)}`);
+function logExistence(filePath: string = "") {
+  console.log(`E ${filePath}`);
+  openInCursor(filePath);
 }
 
-function logCreation(fileName: string = "") {
-  console.log(`C ${getFilePath(fileName)}`);
+function logCreation(filePath: string = "") {
+  console.log(`C ${filePath}`);
+  openInCursor(filePath);
+}
+
+function openInCursor(filePath: string) {
+  const command = new Deno.Command("cursor", {
+    args: [filePath],
+  });
+  command.spawn();
 }
 
 async function fetchDescription() {
   let partsExisting = 0;
-  if (await exists(getFilePath("description.part1.md"))) {
-    logExistence("description.part1.md");
+
+  const descriptionPart1Path = getInputFilePath("description.part1.md");
+  if (await exists(descriptionPart1Path)) {
+    logExistence(descriptionPart1Path);
     partsExisting++;
   }
-  if (await exists(getFilePath("description.part2.md"))) {
-    logExistence("description.part2.md");
+
+  const descriptionPart2Path = getInputFilePath("description.part2.md");
+  if (await exists(descriptionPart2Path)) {
+    logExistence(descriptionPart2Path);
     partsExisting++;
   }
+
   if (partsExisting === 2) {
     return;
   }
@@ -181,7 +184,7 @@ async function fetchDescription() {
 }
 
 async function saveDescription(fileName: string, description: Element) {
-  const descriptionPath = getFilePath(fileName);
+  const descriptionPath = getInputFilePath(fileName);
   if (description.textContent) {
     await Deno.writeTextFile(descriptionPath, description.textContent);
     logCreation(fileName);

@@ -1,6 +1,6 @@
 {
   "tasks": {
-    "init": "deno run -R=io,solutions -W=io,solutions -N=adventofcode.com -E=AOC_SESSION_KEY --env-file scripts/init.ts",
+    "init": "deno run -R=io,solutions -W=io,solutions -N=adventofcode.com -E=AOC_SESSION_KEY --env-file --allow-run=cursor scripts/init.ts",
     "check": "deno run -R=io -W=io --allow-run=deno scripts/check.ts"
   },
   "imports": {
