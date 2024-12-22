@@ -12,8 +12,11 @@ export type Year = z.infer<typeof yearSchema>;
 export const daySchema = z.coerce.number().min(1).max(25).default(currentDay);
 export type Day = z.infer<typeof daySchema>;
 
-export const runtimeSchema = z.enum(["ts-deno"]);
+export const runtimeSchema = z.enum(["ts-deno", "ts-node", "ts-bun"]);
 export type Runtime = z.infer<typeof runtimeSchema>;
+
+export const languageSchema = z.enum(["ts"]);
+export type Language = z.infer<typeof languageSchema>;
 
 export const partSchema = z.enum(["1", "2"]);
 export type Part = z.infer<typeof partSchema>;
@@ -65,7 +68,19 @@ export function getIOFile(
 
 const extensionByRuntime: Record<Runtime, string> = {
   "ts-deno": "ts",
+  "ts-node": "ts",
+  "ts-bun": "ts",
 };
+
+export const runtimesByFolder: Record<Language, Runtime[]> = {
+  ts: ["ts-node", "ts-deno", "ts-bun"],
+};
+
+export const folderByRuntime = Object.fromEntries(
+  Object.entries(runtimesByFolder).flatMap(([folder, runtimes]) =>
+    runtimes.map((runtime) => [runtime, folder])
+  )
+) as Record<Runtime, Language>;
 
 export function getProgramFile(
   year: YearString,
@@ -73,5 +88,5 @@ export function getProgramFile(
   part: Part,
   runtime: Runtime
 ) {
-  return `solutions/${runtime}/${year}/${day}/part${part}.${extensionByRuntime[runtime]}`;
+  return `solutions/${folderByRuntime[runtime]}/${year}/${day}/part${part}.${extensionByRuntime[runtime]}`;
 }

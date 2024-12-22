@@ -1,4 +1,4 @@
-import { partSchema, runtimeSchema } from "./lib/shared.ts";
+import { languageSchema, partSchema, runtimesByFolder } from "./lib/shared.ts";
 import { walk } from "jsr:@std/fs/walk";
 import { runSolution } from "./lib/runSolution.ts";
 
@@ -12,14 +12,14 @@ for await (const entry of walk("solutions", {
   // solutions/ts-deno/2024/01/part1.ts
   match: [/^.*\/\d{4}\/(?:0[1-9]|1[0-9]|2[0-5])\/part[1-2]\.ts$/],
 })) {
-  const [_, runtimeUnparsed, year, day, fileName] = entry.path.split("/");
+  const [_, languageUnparsed, year, day, fileName] = entry.path.split("/");
   const part = partSchema.parse(
     fileName.replace("part", "").replace(".ts", "")
   );
-  const runtime = runtimeSchema.parse(runtimeUnparsed);
+  const language = languageSchema.parse(languageUnparsed);
 
   entries.push({
-    runtime,
+    language,
     year,
     day,
     part,
@@ -58,7 +58,7 @@ entries.sort((a, b) => {
 
 let lastEntry: (typeof entries)[number] | undefined;
 for (const entry of entries) {
-  const { year, day, part, runtime } = entry;
+  const { year, day, part, language } = entry;
   if (
     lastEntry?.year !== year ||
     lastEntry?.day !== day ||
@@ -68,53 +68,55 @@ for (const entry of entries) {
   }
   lastEntry = entry;
   for (const solutionType of ["example", "actual"] as const) {
-    await runSolution({
-      year,
-      day,
-      part,
-      runtime,
-      solutionType,
-      reporter: async (data) => {
-        switch (data.status) {
-          case "failure": {
-            console.error("❌ FAILURE");
-            failures++;
-            break;
-          }
-          case "success-no-expected": {
-            const { result, computationTime, outputFilePath } = data;
-            console.log(`🆕 Output:   ${result}`);
-            const answer = prompt(
-              `❌ Output file does not exist. Do you want to create it with the current output? (y/n):`
-            );
-            if (answer?.toLowerCase() === "y") {
-              await Deno.writeTextFile(outputFilePath, result);
-              console.log(`✅ Created ${outputFilePath}`);
-            }
-            console.log(`🕐 Took:     ${Math.round(computationTime)}ms`);
-            break;
-          }
-          case "success": {
-            const { result, expected, computationTime } = data;
-            if (result === expected) {
-              console.log(
-                `✅ ${runtime} ${solutionType.padEnd(7, " ")} 🕐 ${Math.round(
-                  computationTime
-                )}ms`
-              );
-            } else {
-              console.log(
-                `❌ ${runtime} ${solutionType.padEnd(7, " ")} 🕐 ${Math.round(
-                  computationTime
-                )}ms`
-              );
+    for (const runtime of runtimesByFolder[language]) {
+      await runSolution({
+        year,
+        day,
+        part,
+        runtime,
+        solutionType,
+        reporter: async (data) => {
+          switch (data.status) {
+            case "failure": {
+              console.error("❌ FAILURE");
               failures++;
+              break;
             }
-            break;
+            case "success-no-expected": {
+              const { result, computationTime, outputFilePath } = data;
+              console.log(`🆕 Output:   ${result}`);
+              const answer = prompt(
+                `❌ Output file does not exist. Do you want to create it with the current output? (y/n):`
+              );
+              if (answer?.toLowerCase() === "y") {
+                await Deno.writeTextFile(outputFilePath, result);
+                console.log(`✅ Created ${outputFilePath}`);
+              }
+              console.log(`🕐 Took:     ${Math.round(computationTime)}ms`);
+              break;
+            }
+            case "success": {
+              const { result, expected, computationTime } = data;
+              if (result === expected) {
+                console.log(
+                  `✅ ${runtime} ${solutionType.padEnd(7, " ")} 🕐 ${Math.round(
+                    computationTime
+                  )}ms`
+                );
+              } else {
+                console.log(
+                  `❌ ${runtime} ${solutionType.padEnd(7, " ")} 🕐 ${Math.round(
+                    computationTime
+                  )}ms`
+                );
+                failures++;
+              }
+              break;
+            }
           }
-        }
-      },
-    });
+        },
+      });
+    }
   }
 }
 

@@ -38,7 +38,20 @@ export async function runSolution(args: RunSolutionArgs) {
 
   if (runtime === "ts-deno") {
     const tsDenoCommand = new Deno.Command("deno", {
-      args: ["run", getProgramFile(year, day, part, runtime)],
+      args: [
+        "eval",
+        "--ext=ts",
+        `import program from "./${getProgramFile(year, day, part, runtime)}";
+         import { toLines } from "jsr:@std/streams/unstable-to-lines";
+
+         const input = toLines(Deno.stdin.readable);
+
+         async function output(result: string | number) {
+           await Deno.stdout.write(new TextEncoder().encode(result.toString()));
+         }
+
+         await output(await program(input));`,
+      ],
       stdin: "piped",
       stdout: "piped",
     });

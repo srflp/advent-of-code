@@ -10,7 +10,7 @@ env:
   DENO_DIR: deno_cache
 
 jobs:
-  check:
+  check-all:
     runs-on: ubuntu-latest
 
     steps:
