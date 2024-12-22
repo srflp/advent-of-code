@@ -187,7 +187,7 @@ async function saveDescription(fileName: string, description: Element) {
   const descriptionPath = getInputFilePath(fileName);
   if (description.textContent) {
     await Deno.writeTextFile(descriptionPath, description.textContent);
-    logCreation(fileName);
+    logCreation(descriptionPath);
   } else {
     console.error("ERROR: No description found");
   }

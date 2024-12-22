@@ -7,10 +7,8 @@ import {
   yearSchema,
   handleError,
   inputStringArgsSchema,
-  getIOFile,
-  getProgramFile,
 } from "./lib/shared.ts";
-import { exists } from "jsr:@std/fs";
+import { runSolution } from "./lib/runSolution.ts";
 
 /**
  * Example:
@@ -44,71 +42,43 @@ if (!args.runtime) {
 
 const argsStr = handleError(inputStringArgsSchema.safeParse(args));
 
-if (args.runtime === "ts-deno") {
-  const tsDenoCommand = new Deno.Command("deno", {
-    args: [
-      "run",
-      getProgramFile(argsStr.year, argsStr.day, args.part, args.runtime),
-    ],
-    stdin: "piped",
-    stdout: "piped",
-  });
-  const output = await runCommand(tsDenoCommand);
-  if (!output) {
-    console.error("❌ FAILURE");
-    Deno.exit(1);
-  }
-
-  const outputFile = getIOFile(
-    "output",
-    argsStr.year,
-    argsStr.day,
-    args.part,
-    args.input
-  );
-  // const outputExists = await Deno.ensu(outputFile);
-  const outputExists = await exists(outputFile);
-  if (!outputExists) {
-    console.log(`🆕 Output:   ${output.result}`);
-    const answer = prompt(
-      `❌ Output file does not exist. Do you want to create it with the current output? (y/n):`
-    );
-    if (answer?.toLowerCase() === "y") {
-      await Deno.writeTextFile(outputFile, output.result);
-      console.log(`✅ Created ${outputFile}`);
+await runSolution({
+  year: argsStr.year,
+  day: argsStr.day,
+  part: args.part,
+  runtime: args.runtime,
+  solutionType: args.input,
+  reporter: async (data) => {
+    switch (data.status) {
+      case "failure": {
+        console.error("❌ FAILURE");
+        break;
+      }
+      case "success-no-expected": {
+        const { result, computationTime, outputFilePath } = data;
+        console.log(`🆕 Output:   ${result}`);
+        const answer = prompt(
+          `❌ Output file does not exist. Do you want to create it with the current output? (y/n):`
+        );
+        if (answer?.toLowerCase() === "y") {
+          await Deno.writeTextFile(outputFilePath, result);
+          console.log(`✅ Created ${outputFilePath}`);
+        }
+        console.log(`🕐 Took:     ${Math.round(computationTime)}ms`);
+        break;
+      }
+      case "success":
+        {
+          const { result, expected, computationTime } = data;
+          if (result === expected) {
+            console.log(`✅ Output:   ${result}`);
+          } else {
+            console.log(`❌ Output: ${result}`);
+          }
+          console.log(`📋 Expected: ${expected}`);
+          console.log(`🕐 Took:     ${Math.round(computationTime)}ms`);
+        }
+        break;
     }
-    Deno.exit(0);
-  }
-
-  const expected = await Deno.readTextFile(outputFile);
-  if (output.result === expected) {
-    console.log(`✅ Output:   ${output.result}`);
-  } else {
-    console.log(`❌ Output: ${output.result}`);
-  }
-  console.log(`📋 Expected: ${expected}`);
-  console.log(`🕐 Took:     ${Math.round(output.computationTime)}ms`);
-}
-
-async function runCommand(command: Deno.Command) {
-  const process = command.spawn();
-  const inputFile = await Deno.open(
-    getIOFile("input", argsStr.year, argsStr.day, args.part, args.input)
-  );
-  performance.mark("start");
-  await inputFile.readable.pipeTo(process.stdin);
-  const output = await process.output();
-  performance.mark("end");
-  const computationTime = performance.measure(
-    "computationTime",
-    "start",
-    "end"
-  );
-  if (output.success) {
-    return {
-      result: new TextDecoder().decode(output.stdout),
-      computationTime: computationTime.duration,
-    };
-  }
-  return null;
-}
+  },
+});
