@@ -2,7 +2,7 @@
   "tasks": {
     "init": "deno run -R=io,solutions -W=io,solutions -N=adventofcode.com -E=AOC_SESSION_KEY --env-file --allow-run=cursor scripts/init.ts",
     "check": "deno run -R=io -W=io --allow-run=deno scripts/check.ts",
-    "check-all": "deno run -R=io,solutions -W=io,solutions --allow-run=deno scripts/check-all.ts"
+    "check-all": "deno run -R=io,solutions -W=io,solutions --allow-run=deno,tsx scripts/check-all.ts"
   },
   "imports": {
     "@b-fuze/deno-dom": "jsr:@b-fuze/deno-dom@^0.1.48",

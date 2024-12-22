@@ -33,60 +33,119 @@ interface RunSolutionArgs {
   ) => Promise<void>;
 }
 
+const runtimeCommands: Record<
+  Runtime,
+  { command: string; args: (programPath: string) => string[] }
+> = {
+  "ts-deno": {
+    command: "deno",
+    args: (programPath) => [
+      "eval",
+      "--ext=ts",
+      `
+      import program from "./${programPath}";
+      import { toLines } from "jsr:@std/streams/unstable-to-lines";
+      const input = toLines(Deno.stdin.readable);
+      async function output(result: string | number) {
+        await Deno.stdout.write(new TextEncoder().encode(result.toString()));
+      }
+      await output(await program(input));
+      `,
+    ],
+  },
+  "ts-node": {
+    command: "tsx",
+    args: (programPath) => [
+      "--input-type=module",
+      "-e",
+      `
+      import program from "./${programPath}";
+      import { ReadableStream } from "node:stream/web";
+
+      const webStream = ReadableStream.from(process.stdin);
+      const textStream = webStream.pipeThrough(new TextDecoderStream())
+        .pipeThrough(new TransformStream({
+          transform(chunk, controller) {
+            const lines = chunk.split(/\\r?\\n/g);
+            for (const line of lines) {
+              if (line) controller.enqueue(line);
+            }
+          }
+        }));
+      
+      const result = await program.default(textStream);
+      process.stdout.write(result.toString());
+      `,
+    ],
+  },
+  "ts-bun": {
+    command: "bun",
+    args: (programPath) => [
+      "--input-type=module",
+      "-e",
+      `
+      import program from "./${programPath}";
+      const webStream = ReadableStream.from(process.stdin);
+      const textStream = webStream.pipeThrough(new TextDecoderStream())
+        .pipeThrough(new TransformStream({
+          transform(chunk, controller) {
+            const lines = chunk.split(/\\r?\\n/g);
+            for (const line of lines) {
+              if (line) controller.enqueue(line);
+            }
+          }
+        }));
+      
+      const result = await program.default(textStream);
+      process.stdout.write(result.toString());
+      `,
+    ],
+  },
+};
+
 export async function runSolution(args: RunSolutionArgs) {
   const { runtime, year, day, part, solutionType, reporter } = args;
 
-  if (runtime === "ts-deno") {
-    const tsDenoCommand = new Deno.Command("deno", {
-      args: [
-        "eval",
-        "--ext=ts",
-        `import program from "./${getProgramFile(year, day, part, runtime)}";
-         import { toLines } from "jsr:@std/streams/unstable-to-lines";
+  if (runtime === "ts-bun") {
+    return;
+  }
 
-         const input = toLines(Deno.stdin.readable);
-
-         async function output(result: string | number) {
-           await Deno.stdout.write(new TextEncoder().encode(result.toString()));
-         }
-
-         await output(await program(input));`,
-      ],
+  const command = runtimeCommands[runtime];
+  const output = await runCommand({
+    command: new Deno.Command(command.command, {
+      args: command.args(getProgramFile(year, day, part, runtime)),
       stdin: "piped",
       stdout: "piped",
-    });
-    const output = await runCommand({
-      command: tsDenoCommand,
-      year,
-      day,
-      part,
-      solutionType,
-    });
-    if (!output) {
-      reporter({ status: "failure" });
-      return;
-    }
-
-    const outputFile = getIOFile("output", year, day, part, solutionType);
-    const outputExists = await exists(outputFile);
-    if (!outputExists) {
-      await reporter({
-        status: "success-no-expected",
-        result: output.result,
-        computationTime: output.computationTime,
-        outputFilePath: outputFile,
-      });
-      return;
-    }
-
-    const expected = await Deno.readTextFile(outputFile);
-    await reporter({
-      status: "success",
-      result: output.result,
-      expected,
-      computationTime: output.computationTime,
-    });
+    }),
+    year,
+    day,
+    part,
+    solutionType,
+  });
+  if (!output) {
+    reporter({ status: "failure" });
+    return;
   }
+
+  const outputFile = getIOFile("output", year, day, part, solutionType);
+  const outputExists = await exists(outputFile);
+  if (!outputExists) {
+    await reporter({
+      status: "success-no-expected",
+      result: output.result,
+      computationTime: output.computationTime,
+      outputFilePath: outputFile,
+    });
+    return;
+  }
+
+  const expected = await Deno.readTextFile(outputFile);
+  await reporter({
+    status: "success",
+    result: output.result,
+    expected,
+    computationTime: output.computationTime,
+  });
 }
 
 interface RunCommandArgs {

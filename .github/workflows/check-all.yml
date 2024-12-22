@@ -31,5 +31,14 @@ jobs:
           path: ${{ env.DENO_DIR }}
           key: ${{ hashFiles('deno.lock') }}
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install tsx
+        run: npm install -g tsx
+
       - name: Run check-all task
         run: deno task check-all
