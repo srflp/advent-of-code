@@ -11,7 +11,7 @@ env:
 
 jobs:
   check-all:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout code
@@ -22,6 +22,14 @@ jobs:
         env:
           GIT_CRYPT_KEY: ${{ secrets.GIT_CRYPT_KEY }}
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install npm dependencies
+        run: npm ci
+
       - name: Setup Deno
         uses: denoland/setup-deno@v2
 
@@ -31,13 +39,10 @@ jobs:
           path: ${{ env.DENO_DIR }}
           key: ${{ hashFiles('deno.lock') }}
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: 20
-
-      - name: Install npm dependencies
-        run: npm ci
+          bun-version: latest
 
       - name: Run check-all task
         run: deno task check-all

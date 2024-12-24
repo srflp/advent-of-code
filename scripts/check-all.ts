@@ -42,20 +42,6 @@ entries.sort((a, b) => {
   return 0;
 });
 
-// 📋 2024 01 part1
-// ✅ ts-deno example 🕐 23ms
-// ✅ ts-deno actual  🕐 26ms
-// 📋 2024 01 part2
-// ✅ ts-deno example 🕐 23ms
-// ✅ ts-deno actual  🕐 28ms
-// 📋 2024 02 part1
-// ✅ ts-deno example 🕐 23ms
-// ✅ ts-deno actual  🕐 26ms
-// 📋 2024 02 part2
-// ✅ ts-deno example 🕐 23ms
-// ❌ ts-deno actual  🕐 26ms
-// ❌ 1 solution failed
-
 let lastEntry: (typeof entries)[number] | undefined;
 for (const entry of entries) {
   const { year, day, part, language } = entry;
@@ -99,9 +85,12 @@ for (const entry of entries) {
               const { result, expected, computationTime } = data;
               if (result === expected) {
                 console.log(
-                  `✅ ${runtime} ${solutionType.padEnd(7, " ")} 🕐 ${Math.round(
-                    computationTime
-                  )}ms`
+                  `✅ ${runtime.padEnd(7, " ")} ${solutionType.padEnd(
+                    7,
+                    " "
+                  )} 🕐 ${Math.round(computationTime)
+                    .toString()
+                    .padStart(3, " ")}ms`
                 );
               } else {
                 console.log(

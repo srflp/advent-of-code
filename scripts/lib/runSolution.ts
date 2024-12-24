@@ -71,23 +71,13 @@ const runtimeCommands: Record<
   "ts-bun": {
     command: "bun",
     args: (programPath) => [
-      "--input-type=module",
       "-e",
       `
       import program from "./${programPath}";
-      const webStream = ReadableStream.from(process.stdin);
-      const textStream = webStream.pipeThrough(new TextDecoderStream())
-        .pipeThrough(new TransformStream({
-          transform(chunk, controller) {
-            const lines = chunk.split(/\\r?\\n/g);
-            for (const line of lines) {
-              if (line) controller.enqueue(line);
-            }
-          }
-        }));
-      
-      const result = await program.default(textStream);
-      process.stdout.write(result.toString());
+      import { toLines } from "@std/streams/unstable-to-lines";
+      const input = toLines(Bun.stdin.stream());
+      const result = await program(input);
+      await Bun.write(Bun.stdout, result.toString());
       `,
     ],
   },
@@ -95,10 +85,6 @@ const runtimeCommands: Record<
 
 export async function runSolution(args: RunSolutionArgs) {
   const { runtime, year, day, part, solutionType, reporter } = args;
-
-  if (runtime === "ts-bun") {
-    return;
-  }
 
   const command = runtimeCommands[runtime];
   const output = await runCommand({
