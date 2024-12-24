@@ -44,12 +44,11 @@ const runtimeCommands: Record<
       "--ext=ts",
       `
       import program from "./${programPath}";
-      import { toLines } from "jsr:@std/streams/unstable-to-lines";
-      const input = toLines(Deno.stdin.readable);
-      async function output(result: string | number) {
-        await Deno.stdout.write(new TextEncoder().encode(result.toString()));
-      }
-      await output(await program(input));
+      import { toLines } from "@std/streams/unstable-to-lines";
+      const { stdin, stdout } = Deno;
+      const input = toLines(stdin.readable);
+      const result = await program(input);
+      await stdout.write(new TextEncoder().encode(result.toString()));
       `,
     ],
   },
@@ -60,21 +59,12 @@ const runtimeCommands: Record<
       "-e",
       `
       import program from "./${programPath}";
+      import { toLines } from "@std/streams/unstable-to-lines";
       import { ReadableStream } from "node:stream/web";
-
-      const webStream = ReadableStream.from(process.stdin);
-      const textStream = webStream.pipeThrough(new TextDecoderStream())
-        .pipeThrough(new TransformStream({
-          transform(chunk, controller) {
-            const lines = chunk.split(/\\r?\\n/g);
-            for (const line of lines) {
-              if (line) controller.enqueue(line);
-            }
-          }
-        }));
-      
-      const result = await program.default(textStream);
-      process.stdout.write(result.toString());
+      import { stdin, stdout } from "node:process";
+      const input = toLines(ReadableStream.from(stdin));
+      const result = await program.default(input);
+      await stdout.write(result.toString());
       `,
     ],
   },

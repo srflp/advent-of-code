@@ -8,7 +8,8 @@
     "@b-fuze/deno-dom": "jsr:@b-fuze/deno-dom@^0.1.48",
     "@std/fs": "jsr:@std/fs@^1.0.6",
     "@std/io": "jsr:@std/io@^0.225.0",
-    "@std/streams": "jsr:@std/streams@^1.0.8",
+    "@std/streams": "npm:@jsr/std__streams@^1.0.8",
     "zod": "npm:zod@^3.23.8"
-  }
+  },
+  "nodeModulesDir": "auto"
 }
