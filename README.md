@@ -11,4 +11,5 @@
 # Assumptions
 
 - all input / output files and descriptions are stored under `io/` and are encrypted with `git-crypt` to comply with the [rules](https://adventofcode.com/about)
-- every solution file receives input via stdin and outputs to stdout
+- TypeScript solution is a .ts file with a default exported module
+- in other languages a solution file receives input via stdin and outputs to stdout
